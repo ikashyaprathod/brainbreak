@@ -1,6 +1,6 @@
 /**
  * AI system prompts for BrainBreak.
- * Centralized prompt engineering for all Gemini API interactions.
+ * Centralized prompt engineering for all NVIDIA API interactions.
  * Each prompt is exam-aware and culturally sensitive to Indian student context.
  * @module lib/prompts
  */
@@ -9,7 +9,7 @@ import type { ExamType } from '@/types';
 
 /**
  * Builds the system prompt for journal entry analysis.
- * Instructs Gemini to identify stress triggers, emotional patterns,
+ * Instructs NVIDIA Nemotron to identify stress triggers, emotional patterns,
  * and provide structured JSON analysis.
  *
  * @param examType - The student's exam type for contextual analysis

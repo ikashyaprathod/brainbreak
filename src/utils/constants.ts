@@ -106,10 +106,10 @@ export const RATE_LIMIT = {
 
 // ─── AI Configuration ───────────────────────────────────────────────
 
-/** Gemini model configuration */
+/** NVIDIA model configuration */
 export const AI_CONFIG = {
   /** Model name */
-  MODEL_NAME: 'gemini-1.5-flash',
+  MODEL_NAME: 'nvidia/nemotron-3-ultra-550b-a55b',
   /** Temperature for analysis (more deterministic) */
   ANALYSIS_TEMPERATURE: 0.4,
   /** Temperature for chat (more creative) */

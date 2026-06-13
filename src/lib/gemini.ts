@@ -1,49 +1,53 @@
 /**
- * Server-side Google Gemini AI client initialization.
+ * Server-side NVIDIA NIM API client initialization (OpenAI-compatible).
  * This module should ONLY be imported in API routes (server-side).
- * @module lib/gemini
+ * @module lib/nvidia
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AI_CONFIG } from '@/utils/constants';
+import OpenAI from 'openai';
 
 /**
- * Initializes and returns the Google Generative AI client.
- * Throws if the API key is not configured.
- * @returns GoogleGenerativeAI instance
- * @throws Error if GEMINI_API_KEY is not set
+ * Singleton instance of the OpenAI client configured for NVIDIA NIM API.
  */
-function getClient(): GoogleGenerativeAI {
-  const apiKey = process.env.GEMINI_API_KEY;
+let clientInstance: OpenAI | null = null;
 
-  if (!apiKey) {
-    throw new Error(
-      'GEMINI_API_KEY is not configured. Add it to your .env.local file.'
-    );
+/**
+ * Initializes and returns the NVIDIA NIM API client.
+ * Throws if the API key is not configured.
+ *
+ * @returns OpenAI client instance configured for NVIDIA base URL
+ * @throws Error if NVIDIA_API_KEY is not set
+ */
+function getClient(): OpenAI {
+  if (!clientInstance) {
+    const apiKey = process.env.NVIDIA_API_KEY;
+
+    if (!apiKey) {
+      throw new Error(
+        'NVIDIA_API_KEY is not configured. Add it to your .env.local file.'
+      );
+    }
+
+    clientInstance = new OpenAI({
+      apiKey,
+      baseURL: 'https://integrate.api.nvidia.com/v1',
+    });
   }
 
-  return new GoogleGenerativeAI(apiKey);
+  return clientInstance;
 }
 
 /**
- * Gets a configured Gemini model instance for content generation.
- * @param temperature - Generation temperature (0-1). Lower = more deterministic.
- * @param maxOutputTokens - Maximum tokens in the response.
- * @returns Configured GenerativeModel instance
+ * Gets the configured NVIDIA client instance and model name.
+ *
+ * @returns Object containing the configured OpenAI client and model name
  */
-export function getGeminiModel(
-  temperature: number = AI_CONFIG.CHAT_TEMPERATURE,
-  maxOutputTokens: number = AI_CONFIG.CHAT_MAX_TOKENS
-) {
+export function getModel() {
   const client = getClient();
+  const modelName = 'nvidia/nemotron-3-ultra-550b-a55b';
 
-  return client.getGenerativeModel({
-    model: AI_CONFIG.MODEL_NAME,
-    generationConfig: {
-      temperature,
-      maxOutputTokens,
-      topP: 0.95,
-      topK: 40,
-    },
-  });
+  return {
+    client,
+    modelName,
+  };
 }

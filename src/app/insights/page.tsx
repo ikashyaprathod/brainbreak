@@ -147,7 +147,7 @@ export default function InsightsPage() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Add a Gemini API key to get personalized mindfulness exercises 🧘
+            Add an NVIDIA API key to get personalized mindfulness exercises 🧘
           </p>
         )}
       </div>

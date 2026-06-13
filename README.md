@@ -10,7 +10,7 @@ BrainBreak helps students balance their rigorous study routines with emotional r
 
 - **Mood Logging:** Interactive emoji selection combined with a 1-10 fine-tuning scale mapping to mental states.
 - **Daily Journaling:** Open-ended reflections with 500ms debounced auto-save draft functionality.
-- **GenAI Stress Analysis:** Powered by Google Gemini 1.5 Flash, the app analyzes entries in real-time to pinpoint stress triggers (e.g. mock test scores, syllabus coverage, peer pressure) and emotional patterns.
+- **GenAI Stress Analysis:** Powered by NVIDIA Nemotron 3 Ultra 550B, the app analyzes entries in real-time to pinpoint stress triggers (e.g. mock test scores, syllabus coverage, peer pressure) and emotional patterns.
 - **AI Companion Chat:** An always-available streaming chatbot companion tailored to the student's exam type and current mood context.
 - **Mindfulness Exercises:** Dynamic, AI-recommended coping exercises (breathing techniques, desk stretches, physical movement) designed to fit within tight study schedules.
 - **Streak Tracking (🔥):** Celebrates consecutive days of reflection with flame animations and milestone indicators at 7, 14, 21, and 30+ days.
@@ -24,10 +24,15 @@ BrainBreak helps students balance their rigorous study routines with emotional r
 - **Language:** Strict TypeScript (strict compiler flags, no implicit any)
 - **Styling:** Tailwind CSS (configured with dark-mode default and calming custom violet-cyan palette)
 - **UI Components:** Custom accessible layouts using Radix UI/shadcn patterns
-- **AI Engine:** Google Gemini 1.5 Flash (via `@google/generative-ai` SDK)
+- **AI Engine:** NVIDIA Nemotron 3 Ultra 550B (nemotron-3-ultra-550b-a55b) via `openai` SDK
 - **Visuals/Charts:** Recharts (lazy loaded for bundle optimization)
 - **State/Storage:** SSR-safe persistent Client-Side `localStorage`
 - **Testing:** Jest + React Testing Library (40 strict unit and integration tests passing)
+
+---
+
+## 📝 Assumptions & Notes
+- Uses NVIDIA NIM API with OpenAI-compatible endpoints via the `openai` npm package
 
 ---
 
@@ -40,7 +45,7 @@ Client (Browser / React Components)
        └─ Next.js Serverless API Routes
             ├─ Rate Limiting (In-memory token bucket)
             ├─ Input Sanitization & Request Validation
-            └─ Gemini SDK Integration (API Key secured server-side)
+            └─ NVIDIA NIM SDK Integration (API Key secured server-side)
 ```
 
 ---
@@ -59,9 +64,9 @@ npm install
 ### 3. Environment Setup
 Create a `.env.local` file in the root directory:
 ```env
-GEMINI_API_KEY=your_google_gemini_api_key_here
+NVIDIA_API_KEY=your_nvidia_api_key_here
 ```
-Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey).
+Get an API key from the NVIDIA API catalog.
 
 ### 4. Run Development Server
 ```bash
@@ -96,7 +101,7 @@ This runs Jest across:
 
 ## 🔒 Security Practices
 
-- **Zero API Key Leakage:** The Gemini API is only invoked from Next.js server-side API routes. The `GEMINI_API_KEY` is kept safe in `.env.local` and never exposed to client-side bundles.
+- **Zero API Key Leakage:** The NVIDIA API is only invoked from Next.js server-side API routes. The `NVIDIA_API_KEY` is kept safe in `.env.local` and never exposed to client-side bundles.
 - **Content Security Policy (CSP):** Configured strict headers in `next.config.mjs` to block XSS vector attacks.
-- **Input Sanitization:** Strips HTML elements, script tags, event handler injections, and blocklists AI prompt injection sequences before forwarding payload to the Gemini API.
+- **Input Sanitization:** Strips HTML elements, script tags, event handler injections, and blocklists AI prompt injection sequences before forwarding payload to the NVIDIA API.
 - **Session-Based Rate Limiting:** Enforces 10 requests per minute limit via server-side in-memory map.

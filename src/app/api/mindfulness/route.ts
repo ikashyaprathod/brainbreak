@@ -7,18 +7,22 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getGeminiModel } from '@/lib/gemini';
+import { getModel } from '@/lib/gemini';
 import { buildMindfulnessPrompt } from '@/lib/prompts';
 import { validateMindfulnessRequest } from '@/lib/validators';
 import { checkRateLimit, getRateLimitHeaders, getSessionId } from '@/lib/rate-limiter';
-import { AI_CONFIG } from '@/utils/constants';
 import type { MindfulnessExercise, APIErrorResponse, MindfulnessResponse } from '@/types';
 
 /**
  * Handles POST requests for mindfulness exercise suggestions.
- * Validates input, checks rate limits, calls Gemini for tailored exercises.
+ * Validates input, checks rate limits, calls NVIDIA Nemotron for tailored exercises.
+ *
+ * @param request - Request object containing the request body
+ * @returns JSON response with exercises or error message
  */
-export async function POST(request: Request): Promise<NextResponse<MindfulnessResponse | APIErrorResponse>> {
+export async function POST(
+  request: Request
+): Promise<NextResponse<MindfulnessResponse | APIErrorResponse>> {
   try {
     // 1. Rate limiting
     const sessionId = getSessionId(request);
@@ -26,7 +30,10 @@ export async function POST(request: Request): Promise<NextResponse<MindfulnessRe
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Too many requests. Please wait a moment.', retryAfter: rateLimit.resetIn },
+        {
+          error: 'Too many requests. Please wait a moment.',
+          retryAfter: rateLimit.resetIn,
+        },
         { status: 429, headers: getRateLimitHeaders(rateLimit) }
       );
     }
@@ -35,13 +42,22 @@ export async function POST(request: Request): Promise<NextResponse<MindfulnessRe
     const body: unknown = await request.json();
     const { mood, triggers, examType } = validateMindfulnessRequest(body);
 
-    // 3. Build prompt and call Gemini
-    const model = getGeminiModel(AI_CONFIG.MINDFULNESS_TEMPERATURE, AI_CONFIG.MINDFULNESS_MAX_TOKENS);
+    // 3. Build prompt and call NVIDIA Nemotron
+    const { client, modelName } = getModel();
     const prompt = buildMindfulnessPrompt(examType, mood, triggers);
 
-    const result = await model.generateContent(prompt);
+    const response = await client.chat.completions.create({
+      model: modelName,
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: 'Suggest quick mindfulness exercises based on my current state.' }
+      ],
+      temperature: 0.6,
+      max_tokens: 1024,
+      stream: false,
+    });
 
-    const responseText = result.response.text();
+    const responseText = response.choices[0]?.message?.content || '';
 
     // 4. Parse response
     const exercises = parseMindfulnessResponse(responseText);
@@ -51,7 +67,9 @@ export async function POST(request: Request): Promise<NextResponse<MindfulnessRe
       { headers: getRateLimitHeaders(rateLimit) }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+    console.error('Mindfulness API Error:', error);
+    const message =
+      error instanceof Error ? error.message : 'An unexpected error occurred';
 
     if (message.includes('must be') || message.includes('must have')) {
       return NextResponse.json({ error: message }, { status: 400 });
@@ -65,10 +83,10 @@ export async function POST(request: Request): Promise<NextResponse<MindfulnessRe
 }
 
 /**
- * Parses Gemini's response into structured MindfulnessExercise array.
+ * Parses NVIDIA response into structured MindfulnessExercise array.
  * Handles markdown code blocks and malformed JSON gracefully.
  *
- * @param text - Raw response text from Gemini
+ * @param text - Raw response text from NVIDIA model
  * @returns Array of parsed MindfulnessExercise objects
  */
 function parseMindfulnessResponse(text: string): MindfulnessExercise[] {
@@ -89,9 +107,18 @@ function parseMindfulnessResponse(text: string): MindfulnessExercise[] {
     return parsed.map((item: unknown) => {
       const exercise = item as Record<string, unknown>;
       return {
-        title: typeof exercise.title === 'string' ? exercise.title : 'Mindfulness Exercise',
-        description: typeof exercise.description === 'string' ? exercise.description : '',
-        duration: typeof exercise.duration === 'string' ? exercise.duration : '5 minutes',
+        title:
+          typeof exercise.title === 'string'
+            ? exercise.title
+            : 'Mindfulness Exercise',
+        description:
+          typeof exercise.description === 'string'
+            ? exercise.description
+            : '',
+        duration:
+          typeof exercise.duration === 'string'
+            ? exercise.duration
+            : '5 minutes',
         type: validateExerciseType(exercise.type),
         steps: Array.isArray(exercise.steps) ? exercise.steps.map(String) : [],
       };
@@ -107,7 +134,9 @@ function parseMindfulnessResponse(text: string): MindfulnessExercise[] {
  * @param type - Raw type value from AI response
  * @returns Valid ExerciseType
  */
-function validateExerciseType(type: unknown): 'breathing' | 'meditation' | 'physical' {
+function validateExerciseType(
+  type: unknown
+): 'breathing' | 'meditation' | 'physical' {
   if (type === 'breathing' || type === 'meditation' || type === 'physical') {
     return type;
   }
